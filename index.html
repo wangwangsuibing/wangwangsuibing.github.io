@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>吉林省一队 / 二队 冰壶成功率统计</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+            Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        h2 {
+            font-size: 18px;
+            margin-top: 16px;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            padding: 16px 20px;
+            margin-bottom: 16px;
+        }
+        .form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 150px;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 6px 8px;
+            font-size: 14px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 7px 14px;
+            font-size: 13px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #1976d2;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background-color: #115293;
+        }
+        .btn-secondary {
+            background-color: #e0e0e0;
+        }
+        .btn-secondary:hover {
+            background-color: #c2c2c2;
+        }
+        .error {
+            color: #d32f2f;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        .info {
+            font-size: 13px;
+            color: #555;
+            margin-top: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 6px 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f0f0f0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            background-color: #eeeeee;
+            color: #424242;
+        }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        .small-text {
+            font-size: 12px;
+            color: #666;
+        }
+        #teamChart {
+            width: 100%;
+            height: 320px;
+            margin-top: 10px;
+        }
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+    <!-- 引入 ECharts CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>🥌 吉林省一队 / 二队 冰壶成功率统计与分析</h1>
+    <p class="small-text">
+        适用于录入“吉林省一队”“吉林省二队”比赛数据，自动计算成功率、生成可视化图表，并导出 Excel（CSV）。
+        成功率公式：<code>成功率 = 得分总和 / (4 × 投壶数) × 100%</code>
+    </p>
+
+    <!-- 一、录入数据 -->
+    <div class="card">
+        <h2>一、录入投壶记录</h2>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="player">选手姓名</label>
+                <input type="text" id="player" placeholder="例如：张三">
+            </div>
+            <div class="form-group">
+                <label for="team">队伍名称</label>
+                <select id="team">
+                    <option value="吉林省一队">吉林省一队</option>
+                    <option value="吉林省二队">吉林省二队</option>
+                    <option value="其他队伍">其他队伍</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="end">局数（End）</label>
+                <input type="number" id="end" min="1" max="20" value="1">
+            </div>
+            <div class="form-group">
+                <label for="stoneIndex">本队第几壶（1~8）</label>
+                <input type="number" id="stoneIndex" min="1" max="8" value="1">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="shotType">投壶类型</label>
+                <select id="shotType">
+                    <option value="Draw">Draw（占位）</option>
+                    <option value="Take-out">Take-out（击打）</option>
+                    <option value="Guard">Guard（掩护）</option>
+                    <option value="Freeze">Freeze（贴靠）</option>
+                    <option value="Other">Other（其他）</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="score">评分（0~4）</label>
+                <input type="number" id="score" min="0" max="4" value="3">
+            </div>
+        </div>
+
+        <div class="form-row" style="margin-top: 4px;">
+            <button class="btn-primary" id="addShotBtn">➕ 添加投壶记录</button>
+            <button class="btn-secondary" id="clearAllBtn">🗑 清空所有记录</button>
+        </div>
+
+        <div id="errorMsg" class="error"></div>
+        <div id="infoMsg" class="info"></div>
+    </div>
+
+    <!-- 二、统计 + 导出 + 可视化 -->
+    <div class="card" id="statsCard" style="display:none;">
+        <h2>二、吉林省一队 / 二队 成功率统计与可视化</h2>
+
+        <div class="flex-between">
+            <div>
+                <span class="badge" id="overallBadge">整体成功率：0%</span>
+            </div>
+            <div class="small-text" id="totalShotsInfo"></div>
+        </div>
+
+        <div style="margin-top: 8px; margin-bottom: 8px;">
+            <button class="btn-secondary" id="exportDetailBtn">📥 导出明细 CSV（可用 Excel 打开）</button>
+            <button class="btn-secondary" id="exportTeamStatsBtn">📥 导出队伍统计 CSV</button>
+        </div>
+
+        <h3>1. 吉林省一队 / 吉林省二队 成功率柱状图</h3>
+        <div id="teamChart"></div>
+
+        <h3>2. 按队伍统计</h3>
+        <table id="teamStatsTable">
+            <thead>
+            <tr>
+                <th>队伍</th>
+                <th>投壶数</th>
+                <th>总得分</th>
+                <th>成功率（%）</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h3>3. 按选手统计</h3>
+        <table id="playerStatsTable">
+            <thead>
+            <tr>
+                <th>选手</th>
+                <th>队伍</th>
+                <th>投壶数</th>
+                <th>总得分</th>
+                <th>成功率（%）</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h3>4. 按选手 &amp; 投壶类型统计</h3>
+        <table id="detailStatsTable">
+            <thead>
+            <tr>
+                <th>选手</th>
+                <th>队伍</th>
+                <th>投壶类型</th>
+                <th>投壶数</th>
+                <th>总得分</th>
+                <th>成功率（%）</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- 三、明细记录 -->
+    <div class="card" id="shotsCard" style="display:none;">
+        <h2>三、已录入的投壶明细</h2>
+        <table id="shotsTable">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>选手</th>
+                <th>队伍</th>
+                <th>局数</th>
+                <th>本队第几壶</th>
+                <th>类型</th>
+                <th>评分</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let shots = [];
+    let teamChart = null;
+
+    function calcSuccessRate(scores) {
+        if (!scores || scores.length === 0) return null;
+        const sum = scores.reduce((a, b) => a + b, 0);
+        return sum / (4 * scores.length) * 100;
+    }
+
+    function updateTeamChart(teamStats) {
+        const chartDom = document.getElementById('teamChart');
+        if (!teamChart) {
+            teamChart = echarts.init(chartDom);
+        }
+
+        const teams = [];
+        const rates = [];
+
+        // 只关心 吉林省一队 / 吉林省二队 / 其他队伍（如果有数据）
+        const interestedTeams = ["吉林省一队", "吉林省二队", "其他队伍"];
+        interestedTeams.forEach(team => {
+            if (teamStats[team]) {
+                teams.push(team);
+                rates.push(teamStats[team].rate);
+            }
+        });
+
+        const option = {
+            tooltip: {
+                trigger: 'axis',
+                formatter: function (params) {
+                    const p = params[0];
+                    return `${p.name}<br/>成功率：${p.value.toFixed(2)}%`;
+                }
+            },
+            xAxis: {
+                type: 'category',
+                data: teams
+            },
+            yAxis: {
+                type: 'value',
+                name: '成功率 (%)',
+                min: 0,
+                max: 100
+            },
+            series: [{
+                name: '成功率',
+                type: 'bar',
+                data: rates,
+                label: {
+                    show: true,
+                    position: 'top',
+                    formatter: function (p) {
+                        return p.value.toFixed(1) + '%';
+                    }
+                }
+            }]
+        };
+        teamChart.setOption(option);
+    }
+
+    function renderTables() {
+        const statsCard = document.getElementById('statsCard');
+        const shotsCard = document.getElementById('shotsCard');
+
+        if (shots.length === 0) {
+            statsCard.style.display = 'none';
+            shotsCard.style.display = 'none';
+            return;
+        } else {
+            statsCard.style.display = 'block';
+            shotsCard.style.display = 'block';
+        }
+
+        const allScores = shots.map(s => s.score);
+        const overallRate = calcSuccessRate(allScores);
+        const overallBadge = document.getElementById('overallBadge');
+        const totalScore = allScores.reduce((a, b) => a + b, 0);
+        overallBadge.textContent = `整体成功率：${overallRate.toFixed(2)}%`;
+        document.getElementById('totalShotsInfo').textContent =
+            `共 ${shots.length} 壶，总得分 ${totalScore} 分`;
+
+        // 明细表
+        const shotsTbody = document.querySelector('#shotsTable tbody');
+        shotsTbody.innerHTML = "";
+        shots.forEach((shot, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${idx + 1}</td>
+                <td>${shot.player}</td>
+                <td>${shot.team}</td>
+                <td>${shot.end}</td>
+                <td>${shot.stoneIndex}</td>
+                <td><span class="tag">${shot.shotType}</span></td>
+                <td>${shot.score}</td>
+            `;
+            shotsTbody.appendChild(tr);
+        });
+
+        // 按队伍统计
+        const teamMap = {};
+        shots.forEach(shot => {
+            const team = shot.team || "（未填写）";
+            if (!teamMap[team]) {
+                teamMap[team] = [];
+            }
+            teamMap[team].push(shot.score);
+        });
+
+        const teamStatsTbody = document.querySelector('#teamStatsTable tbody');
+        teamStatsTbody.innerHTML = "";
+        const teamStatsForChart = {};
+
+        Object.keys(teamMap).forEach(team => {
+            const scores = teamMap[team];
+            const rate = calcSuccessRate(scores);
+            const sum = scores.reduce((a, b) => a + b, 0);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${team}</td>
+                <td>${scores.length}</td>
+                <td>${sum}</td>
+                <td>${rate.toFixed(2)}</td>
+            `;
+            teamStatsTbody.appendChild(tr);
+
+            teamStatsForChart[team] = {
+                count: scores.length,
+                sum: sum,
+                rate: rate
+            };
+        });
+
+        // 更新队伍柱状图（重点：吉林省一队 / 吉林省二队对比）
+        updateTeamChart(teamStatsForChart);
+
+        // 按选手统计
+        const playerMap = {};
+        shots.forEach(shot => {
+            const key = `${shot.player}||${shot.team}`;
+            if (!playerMap[key]) {
+                playerMap[key] = [];
+            }
+            playerMap[key].push(shot.score);
+        });
+
+        const playerStatsTbody = document.querySelector('#playerStatsTable tbody');
+        playerStatsTbody.innerHTML = "";
+        Object.keys(playerMap).forEach(key => {
+            const [player, team] = key.split("||");
+            const scores = playerMap[key];
+            const rate = calcSuccessRate(scores);
+            const sum = scores.reduce((a, b) => a + b, 0);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${player}</td>
+                <td>${team}</td>
+                <td>${scores.length}</td>
+                <td>${sum}</td>
+                <td>${rate.toFixed(2)}</td>
+            `;
+            playerStatsTbody.appendChild(tr);
+        });
+
+        // 按选手 + 投壶类型统计
+        const detailMap = {};
+        shots.forEach(shot => {
+            const key = `${shot.player}||${shot.team}||${shot.shotType}`;
+            if (!detailMap[key]) {
+                detailMap[key] = [];
+            }
+            detailMap[key].push(shot.score);
+        });
+
+        const detailStatsTbody = document.querySelector('#detailStatsTable tbody');
+        detailStatsTbody.innerHTML = "";
+        Object.keys(detailMap).forEach(key => {
+            const [player, team, shotType] = key.split("||");
+            const scores = detailMap[key];
+            const rate = calcSuccessRate(scores);
+            const sum = scores.reduce((a, b) => a + b, 0);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${player}</td>
+                <td>${team}</td>
+                <td>${shotType}</td>
+                <td>${scores.length}</td>
+                <td>${sum}</td>
+                <td>${rate.toFixed(2)}</td>
+            `;
+            detailStatsTbody.appendChild(tr);
+        });
+    }
+
+    function exportCSV(filename, rows) {
+        const processValue = (value) => {
+            if (value === null || value === undefined) return "";
+            const str = String(value);
+            if (str.includes('"') || str.includes(',') || str.includes('\n')) {
+                return '"' + str.replace(/"/g, '""') + '"';
+            }
+            return str;
+        };
+
+        const csvContent = rows.map(row => row.map(processValue).join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('addShotBtn').addEventListener('click', function () {
+        const player = document.getElementById('player').value.trim();
+        const team = document.getElementById('team').value;
+        const end = parseInt(document.getElementById('end').value, 10);
+        const stoneIndex = parseInt(document.getElementById('stoneIndex').value, 10);
+        const shotType = document.getElementById('shotType').value;
+        const score = parseInt(document.getElementById('score').value, 10);
+
+        const errorMsg = document.getElementById('errorMsg');
+        const infoMsg = document.getElementById('infoMsg');
+        errorMsg.textContent = "";
+        infoMsg.textContent = "";
+
+        if (!player) {
+            errorMsg.textContent = "请填写选手姓名";
+            return;
+        }
+        if (!Number.isInteger(end) || end <= 0) {
+            errorMsg.textContent = "局数必须是正整数";
+            return;
+        }
+        if (!Number.isInteger(stoneIndex) || stoneIndex < 1 || stoneIndex > 8) {
+            errorMsg.textContent = "本队第几壶必须在 1~8 之间";
+            return;
+        }
+        if (!Number.isInteger(score) || score < 0 || score > 4) {
+            errorMsg.textContent = "评分必须是 0~4 的整数";
+            return;
+        }
+
+        shots.push({ player, team, end, stoneIndex, shotType, score });
+        infoMsg.textContent = `已添加第 ${shots.length} 条记录。`;
+        document.getElementById('stoneIndex').value = Math.min(stoneIndex + 1, 8);
+        renderTables();
+    });
+
+    document.getElementById('clearAllBtn').addEventListener('click', function () {
+        if (confirm("确定要清空所有记录吗？")) {
+            shots = [];
+            document.getElementById('errorMsg').textContent = "";
+            document.getElementById('infoMsg').textContent = "已清空所有记录。";
+            renderTables();
+        }
+    });
+
+    document.getElementById('exportDetailBtn').addEventListener('click', function () {
+        if (shots.length === 0) {
+            alert("暂无数据可以导出。");
+            return;
+        }
+        const header = ["选手", "队伍", "局数", "本队第几壶", "投壶类型", "评分"];
+        const rows = [header];
+        shots.forEach(s => {
+            rows.push([s.player, s.team, s.end, s.stoneIndex, s.shotType, s.score]);
+        });
+        exportCSV("吉林省冰壶投壶明细.csv", rows);
+    });
+
+    document.getElementById('exportTeamStatsBtn').addEventListener('click', function () {
+        if (shots.length === 0) {
+            alert("暂无数据可以导出。");
+            return;
+        }
+        const teamMap = {};
+        shots.forEach(s => {
+            const team = s.team || "（未填写）";
+            if (!teamMap[team]) teamMap[team] = [];
+            teamMap[team].push(s.score);
+        });
+        const header = ["队伍", "投壶数", "总得分", "成功率(%)"];
+        const rows = [header];
+        Object.keys(teamMap).forEach(team => {
+            const scores = teamMap[team];
+            const sum = scores.reduce((a, b) => a + b, 0);
+            const rate = calcSuccessRate(scores);
+            rows.push([team, scores.length, sum, rate.toFixed(2)]);
+        });
+        exportCSV("吉林省队伍成功率统计.csv", rows);
+    });
+
+    renderTables();
+</script>
+</body>
+</html>
